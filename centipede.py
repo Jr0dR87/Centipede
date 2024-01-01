@@ -52,3 +52,73 @@ class Player(Actor):
         self.alive = True
         self.timer = 0
         self.fire_timer = 0
+    
+    def move(self, dx, dy, speed):
+        for i in range(speed):
+            if game.allow_movement(self.x + dx, self.y + dy):
+                self.x += dx
+                self.y += dy
+    
+    def update(self):
+        self.timer += 1
+
+        if self.alive:
+            dx = 0
+            if keyboard.left:
+                dx = -1
+            elif keyboard.right:
+                dx = 1
+            
+            dy = 0
+            if keyboard.up:
+                dy = -1
+            elif keboard.down:
+                dy = 1
+
+            self.move(dx, 0, 3 - abs(dy))
+            self.move(0, dy, 3 - abs(dx))
+            directions = [7,0,1,6,-1,2,5,4,3]
+            dir = directions[dx+3*dy+4]
+
+            if self.timer % 2 == 0 and dir >= 0:
+                difference = (dir - self.direction)
+                rotation_table = [0, 1, 1, -1]
+                rotation = rotation_table[difference % 4]
+                self.direction = (self.direction + rotation) % 4
+
+            self.fire_timer -= 1
+
+            if self.fire_timer < 0 and (self.frame > 0 or keyboard.space):
+                if self.frame == 0:
+                    game.play_sound("laster")
+                    game.bullets.append(Bullet((self.x, self.y - 8)))
+                self.frame = (self.frame + 1) % 3
+                self.fire_timer = Player.RELOAD_TIME
+
+            all_enemies = game.segments + [game.flying_enemy]
+
+            for enemy in all_enemies:
+                if enemy and enemy.collidepoint(self.pos):
+                    if self.timer > Player.INVULNERABILITY_TIM:
+                        game.play_sound("player_explode")
+                        game.explosions.append(Explosion(self.pos, 1))
+                        self.alive = False
+                        self.timer = 0
+                        self.lives -= 1
+
+        else:
+            if self.timer > Player.RESPAWN_TIME:
+                self.alive = True
+                self.timer = 0
+                self.pos = (240, 768)
+                game.clear_rocks_for_respawn(*self.pos)
+        
+        invulnerable = self.timer > Player.INVULNERABILITY_TIME
+        if self.alive and (invulnerable or self.timer % 2 == 0):
+            self.image = "player" + str(self.direction) + str(self.frame)
+        else:
+            self.image = "blank"
+
+class FlyingEnemy(Actor):
+    def __init__(self, player_x):
+        
