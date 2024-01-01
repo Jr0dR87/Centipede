@@ -121,4 +121,23 @@ class Player(Actor):
 
 class FlyingEnemy(Actor):
     def __init__(self, player_x):
-        
+        side = 1 if player_x < 160 else 0 if player_x > 320 else randint(0, 1)
+        super().__init__("blank", (550*side-35, 688))
+        self.moving_x = 1
+        self.dx = 1 - 2 * side
+        self.dy = choice([-1, 1])
+        self.type = randint(0, 2)
+        self.health = 1
+        self.timer = 0
+    
+    def update(self):
+        self.timer += 1
+        self.x += self.dx * self.moving_x * (3 - abs(self.dy))
+        self.y += self.dy * (3 - abs(self.dx * self.moving_x))
+
+        if self.y < 592 or self.y > 784:
+            self.moving_x = randint(0, 1)
+            self.dy = -self.dy
+
+        anim_frame = str([0, 2, 1, 2][(self.timer // 4) % 4])
+        self.image = "meanie" + str(self.type) + anim_frame
