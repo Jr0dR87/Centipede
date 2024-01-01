@@ -141,3 +141,51 @@ class FlyingEnemy(Actor):
 
         anim_frame = str([0, 2, 1, 2][(self.timer // 4) % 4])
         self.image = "meanie" + str(self.type) + anim_frame
+
+class Rock(Actor):
+    def __init__(self, x, y, totem=False):
+        anchor = (24, 60) if totem else CENTRE_ANCHOR
+        super().__init__("blank", cell2pos(x,y), anchor=anchor)
+        self.type = randint(0, 3)
+        
+        if totem:
+            game.play_sound("totem_create")
+            self.health = 5
+            self.show_health = 5
+        else:
+            self.health = randint(3,4)
+            self.show_health = 1
+
+        self.timer = 1
+
+        def damage(self, amount, damage_by_bullet=False):
+            if damage_by_bullet and self.health == 5:
+                game.play_sound('totem_destroy')
+                game.score += 100
+            else:
+                if amount > self.health - 1:
+                    game.play_sound('rock_destroy')
+                else:
+                    game.play_sound("hit", 4)
+
+            game.explosions.append(Explosion(self.pos, 2 * self.health == 5))
+            self.health -= amount
+            self.show_health = self.health
+            self.anchor, self.pos = CENTRE_ANCHOR, self.pos
+
+
+            return self.health < 1 
+        
+        def update(self):
+            self.timer += 1
+
+            if self.timer % 2 == 1 and self.show_health < self.health:
+                self.show_health += 1 
+
+            if self.health == 5 and self.timer > 200:
+                self.damage(1)
+
+            color = str(max(game.wave, 0) % 3)
+            health = str(max(self.show_health - 1, 0))
+            self.image = "rock" + color + str(self.type) + health
+                
